@@ -1,13 +1,10 @@
 use risc0_zkvm::guest::env;
+use shared::Inputs;
 
 fn main() {
-    // TODO: Implement your guest code here
-
-    // read the input
-    let input: u32 = env::read();
-
-    // TODO: do something with the input
-
-    // write public output to the journal
-    env::commit(&input);
+    let serialized_inputs: Vec<u8> = env::read();
+    let inputs = Inputs::from_bytes(&serialized_inputs);
+    let is_valid = inputs.is_valid();
+    assert!(is_valid);
+    env::commit(&is_valid);
 }

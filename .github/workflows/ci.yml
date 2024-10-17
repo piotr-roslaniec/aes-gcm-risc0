@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        rust: [ nightly ]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Cache Rust cargo registry
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Cache Rust build
+        uses: actions/cache@v3
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          components: rustfmt, clippy
+
+      - name: Install Risc0
+        run: |
+          curl -L https://risczero.com/install | bash
+          echo 'export PATH=$PATH:/root/.risc0/bin' >> ~/.bashrc
+          export PATH=$PATH:/root/.risc0/bin
+          rzup install
+
+      - name: Build and test host code
+        run: |
+          cd host
+          cargo build --release
+          cargo test --release
+
+      - name: Build guest code
+        run: |
+          cd methods
+          cargo build --release
+
+      - name: Run clippy and rustfmt
+        run: |
+          cargo fmt -- --check
+          cargo clippy --all-targets -- -D warnings
