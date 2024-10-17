@@ -1,7 +1,7 @@
 pub use aes_gcm::{Block, Stream};
 
-use serde::{Deserialize, Serialize};
 use aes_gcm::aes;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Debug, Deserialize)]
 pub struct Inputs {
@@ -20,7 +20,6 @@ impl Inputs {
     pub fn is_valid(&self) -> bool {
         aes(self.block, self.key) == self.cipher
     }
-
 }
 
 impl Inputs {
