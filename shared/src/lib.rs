@@ -1,6 +1,6 @@
-pub use aes_gcm::{Block, Stream};
+pub use aes_gcm_mini::{Block, Stream};
 
-use aes_gcm::aes;
+use aes_gcm_mini::aes;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Debug, Deserialize)]
