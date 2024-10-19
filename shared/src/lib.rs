@@ -1,3 +1,5 @@
+use aes_gcm::aead::Aead;
+use aes_gcm::{Aes128Gcm, Key, KeyInit, Nonce};
 pub use aes_gcm_mini::{Block, Stream};
 
 use aes_gcm_mini::{aes, aes_gcm};
@@ -81,6 +83,42 @@ impl AesGcmTestCase {
 }
 
 #[derive(Serialize, Debug, Deserialize, PartialEq)]
+pub struct AesGcmNativeTestCase(
+    // We reuse the same data
+    pub AesGcmTestCase,
+);
+
+impl AesGcmNativeTestCase {
+    pub fn default_case() -> Self {
+        Self(AesGcmTestCase::default_case())
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Self {
+        bincode::deserialize(bytes).unwrap()
+    }
+    pub fn to_bytes(&self) -> Vec<u8> {
+        bincode::serialize(&self).unwrap()
+    }
+
+    pub fn is_valid(&self) -> bool {
+        let key = Key::<Aes128Gcm>::from_slice(&self.0.key);
+        let cipher = Aes128Gcm::new(key);
+
+        let nonce = Nonce::from_slice(&self.0.iv);
+        let result = cipher.encrypt(nonce, self.0.plaintext.as_ref());
+
+        match result {
+            Ok(ciphertext) => {
+                let mut result = [0u8; 16];
+                result.copy_from_slice(&ciphertext[..16]); // Copy only the first 16 bytes (block)
+                result == self.0.expected_output
+            }
+            Err(_) => false,
+        }
+    }
+}
+
+#[derive(Serialize, Debug, Deserialize, PartialEq)]
 pub struct TestCase(pub String, pub Vec<u8>);
 
 impl TestCase {
@@ -97,21 +135,31 @@ mod test {
     use super::*;
     #[test]
     fn test_aes() {
-        let aes_test_case = AesTestCase::default_case();
-        assert!(aes_test_case.is_valid());
+        let test_case = AesTestCase::default_case();
+        assert!(test_case.is_valid());
 
-        let serialized = aes_test_case.to_bytes();
+        let serialized = test_case.to_bytes();
         let deserialized = AesTestCase::from_bytes(&serialized);
-        assert_eq!(aes_test_case, deserialized);
+        assert_eq!(test_case, deserialized);
     }
 
     #[test]
     fn test_aes_gcm() {
-        let aes_gcm_test_case = AesGcmTestCase::default_case();
-        assert!(aes_gcm_test_case.is_valid());
+        let test_case = AesGcmTestCase::default_case();
+        assert!(test_case.is_valid());
 
-        let serialized = aes_gcm_test_case.to_bytes();
+        let serialized = test_case.to_bytes();
         let deserialized = AesGcmTestCase::from_bytes(&serialized);
-        assert_eq!(aes_gcm_test_case, deserialized);
+        assert_eq!(test_case, deserialized);
+    }
+
+    #[test]
+    fn test_aes_gcm_native() {
+        let test_case = AesGcmNativeTestCase::default_case();
+        assert!(test_case.is_valid());
+
+        let serialized = test_case.to_bytes();
+        let deserialized = AesGcmNativeTestCase::from_bytes(&serialized);
+        assert_eq!(test_case, deserialized);
     }
 }

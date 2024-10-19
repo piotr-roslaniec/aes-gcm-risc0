@@ -4,7 +4,7 @@ use risc0_zkvm::serde::from_slice;
 use risc0_zkvm::{default_prover, ExecutorEnv};
 use serde::Serialize;
 use serde_with::{serde_as, DurationNanoSeconds};
-use shared::{AesGcmTestCase, AesTestCase, Block, Stream, TestCase};
+use shared::{AesGcmNativeTestCase, AesGcmTestCase, AesTestCase, TestCase};
 use std::time::{Duration, Instant};
 
 #[serde_as]
@@ -29,6 +29,10 @@ fn main() {
         TestCase(
             "AES-GCM".to_string(),
             AesGcmTestCase::default_case().to_bytes(),
+        ),
+        TestCase(
+            "AES-GCM-native".to_string(),
+            AesGcmNativeTestCase::default_case().to_bytes(),
         ),
     ];
 
