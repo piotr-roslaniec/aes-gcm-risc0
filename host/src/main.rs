@@ -1,4 +1,5 @@
 use methods::{GUEST_CODE_FOR_ZK_PROOF_ELF, GUEST_CODE_FOR_ZK_PROOF_ID};
+use prettytable::{row, Table};
 use risc0_zkp::hal::tracker;
 use risc0_zkvm::serde::from_slice;
 use risc0_zkvm::{default_prover, ExecutorEnv};
@@ -36,6 +37,16 @@ fn main() {
         ),
     ];
 
+    let mut table = Table::new();
+    table.add_row(row![
+        "Name",
+        "Duration (ms)",
+        "Cycles",
+        "RAM (bytes)",
+        "Seal (bytes)",
+        "Throughput (Hz)"
+    ]);
+
     for test_case in test_cases {
         let serialized_test_case = test_case.to_bytes();
 
@@ -61,7 +72,6 @@ fn main() {
         let tracker_lock = tracker().lock().unwrap();
         let ram_usage = tracker_lock.peak; // TODO: For some reason RAM is 0, fix
         let cycles = prove_info.stats.total_cycles;
-        // TODO: How to get seal size?
         let seal_size = receipt
             .inner
             .composite()
@@ -79,14 +89,17 @@ fn main() {
             seal: seal_size,
             throughput,
         };
-        println!(
-            "Performance Data:\nName: {}\nDuration: {:.2?}ms\nCycles: {}\nRAM: {} bytes\nSeal: {} bytes\nThroughput: {} Hz",
+
+        table.add_row(row![
             performance_data.name,
-            performance_data.duration.as_millis(),
+            format!("{:.2}", performance_data.duration.as_millis()),
             performance_data.cycles,
             performance_data.ram,
             performance_data.seal,
-            performance_data.throughput
-        );
+            format!("{:.2}", performance_data.throughput)
+        ]);
     }
+
+    println!("### Performance Data");
+    table.printstd();
 }
