@@ -5,4 +5,5 @@ mod ghash;
 mod utils;
 
 pub use aes::aes;
+pub use aes_gcm::aes_gcm;
 pub use utils::{Block, Stream};
